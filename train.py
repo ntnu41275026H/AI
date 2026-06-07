@@ -47,6 +47,14 @@ class ChessSelfPlayEnv(gym.Env):
         self._action_mask = np.ones(4672, dtype=np.int8)
         self._learning_agent: str = ""
 
+        from model import ALGORITHM, SAVE_PATH
+        import os
+        if os.path.exists(SAVE_PATH + ".zip"):
+            self._opponent = ALGORITHM.load(SAVE_PATH)
+        else:
+            self._opponent = None
+        self._total_steps = 0
+
     # ═══ ✅ Reward shaping (change freely) ═══════════════════════════
     # PettingZoo chess rewards: win=+1, loss=-1, draw=0 (terminal only).
     # You can add intermediate rewards here, e.g. based on material count.
@@ -111,23 +119,28 @@ class ChessSelfPlayEnv(gym.Env):
                 self._env.step(None)
                 continue
             opp_mask = opp_obs["action_mask"]
-            # ── Self-Play（啟用：在 __init__ 加下列兩行，取消下方注釋）──────────────────
-            #      from model import ALGORITHM, SAVE_PATH
-            #      self._opponent = ALGORITHM.load(SAVE_PATH)
-            # 快照更新範例（在 reset() 或 __init__ 中加入步數計數器）：
-            #      self._total_steps = getattr(self, "_total_steps", 0) + 1
-            #      if self._total_steps % 100_000 == 0:
-            #          self._opponent = ALGORITHM.load(SAVE_PATH)  # 更新對手至最新版本
-            # ─────────────────────────────────────────────────────────────────────────────
-            # opp_flat = opp_obs["observation"].flatten().astype(np.float32)
-            # action, _ = self._opponent.predict(opp_flat,
-            #                                    action_masks=opp_mask.astype(bool),
-            #                                    deterministic=False)
-            # self._env.step(int(action))
-            # continue
-            # ─────────────────────────────────────────────────────────────────────────────
-            legal = np.where(opp_mask)[0]
-            self._env.step(int(np.random.choice(legal)) if len(legal) else 0)
+
+            # ── 【改善版】Self-Play 實作與動態更新 ──
+            self._total_steps += 1
+            
+            # 每 10 萬步重新載入最新模型以更新對手
+            if self._total_steps % 100_000 == 0:
+                from model import ALGORITHM, SAVE_PATH
+                import os
+                if os.path.exists(SAVE_PATH + ".zip") or os.path.exists(SAVE_PATH):
+                    self._opponent = ALGORITHM.load(SAVE_PATH)
+
+            # 若對手模型存在則進行推論（Self-Play），否則採取隨機動作
+            if getattr(self, "_opponent", None) is not None:
+                opp_flat = opp_obs["observation"].flatten().astype(np.float32)
+                action, _ = self._opponent.predict(opp_flat,
+                                                   action_masks=opp_mask.astype(bool),
+                                                   deterministic=False)
+                self._env.step(int(action))
+                continue
+            else:
+                legal = np.where(opp_mask)[0]
+                self._env.step(int(np.random.choice(legal)) if len(legal) else 0)
 
         if self._is_done():
             reward = self._shape_reward(
