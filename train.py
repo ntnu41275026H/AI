@@ -24,7 +24,7 @@ from stable_baselines3.common.vec_env import DummyVecEnv
 from model import ALGORITHM, POLICY, POLICY_KWARGS, SAVE_PATH
 
 # ═══ ✅ Tune freely: training hyperparameters ══════════════════════
-TOTAL_TIMESTEPS = 500_000   # recommended: 2M+ for meaningful performance
+TOTAL_TIMESTEPS = 2_000_000   # recommended: 2M+ for meaningful performance
 N_ENVS          = 4         # parallel self-play environments
 # ══════════════════════════════════════════════════════════════════
 
@@ -52,19 +52,19 @@ class ChessSelfPlayEnv(gym.Env):
     # You can add intermediate rewards here, e.g. based on material count.
     def _shape_reward(self, reward: float) -> float:
         # ── 範例 1：子力差獎勵（取消注釋啟用）─────────────────────────
-        # import chess as _chess
-        # board = self._env.env.board
-        # _vals = {_chess.PAWN:1, _chess.KNIGHT:3, _chess.BISHOP:3,
-        #          _chess.ROOK:5, _chess.QUEEN:9}
-        # our_color = _chess.WHITE if self._learning_agent == "player_0" else _chess.BLACK
-        # mat = sum(_vals.get(p.piece_type, 0)
-        #           for p in board.piece_map().values() if p.color == our_color) \
-        #     - sum(_vals.get(p.piece_type, 0)
-        #           for p in board.piece_map().values() if p.color != our_color)
-        # reward += mat * 0.001   # 小額中間獎勵，避免蓋過終局 ±1
+        import chess as _chess
+        board = self._env.env.board
+        _vals = {_chess.PAWN:1, _chess.KNIGHT:3, _chess.BISHOP:3,
+                 _chess.ROOK:5, _chess.QUEEN:9}
+        our_color = _chess.WHITE if self._learning_agent == "player_0" else _chess.BLACK
+        mat = sum(_vals.get(p.piece_type, 0)
+                  for p in board.piece_map().values() if p.color == our_color) \
+            - sum(_vals.get(p.piece_type, 0)
+                  for p in board.piece_map().values() if p.color != our_color)
+        reward += mat * 0.001   # 小額中間獎勵，避免蓋過終局 ±1
         # ──────────────────────────────────────────────────────────────
         # ── 範例 2：每步存活小獎勵 ────────────────────────────────────
-        # reward += 0.001   # 鼓勵撐住，不要輕易被將死
+        reward += 0.001   # 鼓勵撐住，不要輕易被將死
         # ──────────────────────────────────────────────────────────────
         return reward
     # ══════════════════════════════════════════════════════════════════

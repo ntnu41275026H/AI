@@ -9,7 +9,7 @@ from sb3_contrib import MaskablePPO  # ✅ Change to: MaskableA2C, or wrap DQN w
 ALGORITHM     = MaskablePPO   # sb3-contrib algorithm with built-in action masking
 POLICY        = "MlpPolicy"   # obs = (8,8,111) flattened → (7104,); MlpPolicy fits
 POLICY_KWARGS = dict(          # Custom network architecture (optional)
-    net_arch=[256, 256],       # Two hidden layers; try [512, 512] for more capacity
+    net_arch=[512, 512],       # Two hidden layers; try [512, 512] for more capacity
 )
 SAVE_PATH     = "model"        # SB3 appends .zip; upload model.zip via run.py
 # ══════════════════════════════════════════════════════════════════
