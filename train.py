@@ -25,7 +25,7 @@ from model import ALGORITHM, POLICY, POLICY_KWARGS, SAVE_PATH
 
 # ═══ ✅ Tune freely: training hyperparameters ══════════════════════
 TOTAL_TIMESTEPS = 2_000_000   # recommended: 2M+ for meaningful performance
-N_ENVS          = 4         # parallel self-play environments
+N_ENVS          = 8         # parallel self-play environments
 # ══════════════════════════════════════════════════════════════════
 
 
@@ -73,6 +73,18 @@ class ChessSelfPlayEnv(gym.Env):
         # ──────────────────────────────────────────────────────────────
         # ── 範例 2：每步存活小獎勵 ────────────────────────────────────
         reward += 0.001   # 鼓勵撐住，不要輕易被將死
+        # ──────────────────────────────────────────────────────────────
+        # ── 範例 3：將軍對手獎勵 (Check Reward) ──
+        if board.is_check():
+            reward -= 0.02  # 被將軍給予小懲罰，鼓勵保護王
+        # ──────────────────────────────────────────────────────────────
+        # ── 範例 4：控制中心獎勵 (Center Control) ──
+        # 鼓勵將棋子走到棋盤中心的四個格子 (e4, d4, e5, d5)
+        center_squares = [_chess.E4, _chess.D4, _chess.E5, _chess.D5]
+        for sq in center_squares:
+            piece = board.piece_at(sq)
+            if piece and piece.color == our_color:
+                reward += 0.005  # 佔領中心給予微小獎勵
         # ──────────────────────────────────────────────────────────────
         return reward
     # ══════════════════════════════════════════════════════════════════
@@ -168,6 +180,11 @@ def main():
         env,
         policy_kwargs=POLICY_KWARGS or None,
         verbose=1,
+        # ── 【追加】超參數優化 ──
+        learning_rate=1e-4,  # 學習率調小，讓訓練更穩定（預設 3e-4）
+        n_steps=2048,        # 每次更新前收集的步數
+        batch_size=128,      # 增加 Batch Size 讓梯度更準確（預設 64）
+        ent_coef=0.02,       # 提高熵係數，鼓勵 AI 探索更多不同的下法（預設 0.01）
     )
 
     print(f"Training {ALGORITHM.__name__} for {TOTAL_TIMESTEPS:,} timesteps...")
