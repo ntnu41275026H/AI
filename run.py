@@ -14,7 +14,7 @@ from arena_client import MLArenaClient
 
 def main():
     # --- Fill in your details ---
-    STUDENT_ID     = "YOUR_ID"          # e.g. "11223344"
+    STUDENT_ID     = "41275026H"          # e.g. "11223344"
     COMPETITION_ID = 11                  # Competition ID — do not change
     SLOT_INDEX     = 0                  # Slot to upload to (0 ~ rl_max_slots-1)
     SLOT_NAME      = "My Chess Agent"   # Display name shown on leaderboard
